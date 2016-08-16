@@ -3,7 +3,7 @@ import (
 	"fmt"
 
 	"golang.org/x/net/context"
-	"google.golang.org/cloud/storage"
+	"cloud.google.com/go/storage"
 )
 
 type (

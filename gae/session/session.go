@@ -6,7 +6,6 @@ import (
 
 type (
 	Session interface{
-
 		Get(key string,ptr interface{}) error
 		Put(key string,ptr interface{}) error
 		Id() string
@@ -19,9 +18,9 @@ type (
 	}
 )
 
-var BuildMaker func(*http.Request) SessionMaker
-func Get(req *http.Request) Session{
-	maker := BuildMaker(req)
+var BuildMaker func(http.ResponseWriter,*http.Request) SessionMaker
+func Get(w http.ResponseWriter,req *http.Request) Session{
+	maker := BuildMaker(w,req)
 	id := obtainId(req)
 	if id == "" {
 		return maker.New()
@@ -30,10 +29,16 @@ func Get(req *http.Request) Session{
 	if s != nil {
 		return s
 	}
-	return maker.new()
+	return maker.New()
 }
 func obtainId(req *http.Request)string{
-	return ""
+	cookie,err:=req.Cookie(sessionName)
+	if err == http.ErrNoCookie {
+		return ""
+	}
+	return cookie.Value
 }
-
+const (
+	sessionName = "_RC_SESSION_"
+)
 
