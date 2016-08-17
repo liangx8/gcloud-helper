@@ -7,9 +7,11 @@ type (
 	baseSessionMaker struct{
 		w http.ResponseWriter
 		r *http.Request
-
+		sessionPool chan map[string]interface{}
 	}
-	baseSession map[string]interface{}
+	baseSession struct{
+		getId func() string
+	}
 )
 
 func (sm *baseSessionMaker)New() Session{
@@ -25,5 +27,8 @@ func BaseSessionInit(){
 	BuildMaker = baseBuildMaker
 }
 func baseBuildMaker(w http.ResponseWriter,r *http.Request) SessionMaker{
-	return &baseSessionMaker{w:w,r:r}
+	pool :=make(chan map[string]*baseSession,1)
+	pool<- make(map[string]*baseSession)
+	return &baseSessionMaker{w:w,r:r,sessionPool:pool}
 }
+var table []rune = []rune("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
