@@ -11,8 +11,9 @@ type (
 	ObjectCallback func(*storage.ObjectHandle) error
 	AttrCallback func(*storage.ObjectAttrs) error
 	Bucket struct{
-		B *storage.BucketHandle
-		C context.Context
+		bh *storage.BucketHandle
+		c context.Context
+		client *storage.Client
 	}
 )
 // cb must be one of ObjectCallback or AttrCallback
@@ -20,7 +21,7 @@ type (
 //   err := All(ctx,bucket,gcs.ObjectCallback(cb))
 //   err := All(ctx,bucket,gcs.AttrCallback(cb))
 func (bucket *Bucket)Objects(cb interface{},query *storage.Query) error {
-	itr := bucket.B.Objects(bucket.C,query)
+	itr := bucket.bh.Objects(bucket.c,query)
 	for{
 		objAttrs,err := itr.Next()
 		if err == iterator.Done {
@@ -40,6 +41,15 @@ func (bucket *Bucket)Objects(cb interface{},query *storage.Query) error {
 	}
 	return nil
 }
+func (bucket *Bucket)Close() error{
+	if bucket.client != nil {
+		return bucket.client.Close()
+	}
+	return nil
+}
+func (bucket *Bucket)Object(name string) *storage.ObjectHandle{
+	return bucket.bh.Object(name)
+}
 func AllBucket(ctx context.Context,
 	client *storage.Client,
 	projecdtID string,
@@ -57,3 +67,10 @@ func AllBucket(ctx context.Context,
 	return nil
 }
 
+// the bucket of blkName must exists,
+func NewBucket(ctx context.Context, prjId,blkName string) (*Bucket,error){
+	cli,err := storage.NewClient(ctx)
+	if err != nil { return nil,err }
+	bkt := cli.Bucket(blkName)
+	return &Bucket{bh:bkt,c:ctx,client:cli},nil
+}
